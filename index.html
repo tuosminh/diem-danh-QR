@@ -25,11 +25,13 @@
       font-size: 17px; cursor: pointer; margin-top: 14px; }
     button:disabled { opacity: .55; cursor: not-allowed; }
     button.secondary { background: #dfe8ee; color: #203a4c; }
-    #reader { margin: 12px auto; max-width: 100%; border-radius: 12px; overflow: hidden; }
+    #reader { margin: 12px auto; max-width: 100%; border-radius: 12px; overflow: hidden; background: #000; }
+    /* Ép video tuân thủ hiển thị inline, tránh bị Zalo đóng băng thành MP4 */
+    #reader video { width: 100% !important; height: auto !important; object-fit: cover !important; }
     #qrVisual { background: #fff; padding: 16px; display: flex; justify-content: center; }
     #qrVisual img, #qrVisual canvas { max-width: 100%; height: auto; }
-    #status { padding: 15px; border-radius: 12px; font-size: 17px; font-weight: 700;
-      background: #e8eef3; color: #24485f; min-height: 68px; }
+    #status { padding: 15px; border-radius: 12px; font-size: 16px; font-weight: 700;
+      background: #e8eef3; color: #24485f; min-height: 60px; display: flex; align-items: center; justify-content: center; text-align: center; }
     #status.success { background: #dcf5e7; color: #08693b; }
     #status.duplicate { background: #fff1cd; color: #7d5400; }
     #status.error { background: #fde5e5; color: #9b2222; }
@@ -47,9 +49,7 @@
     .toastIcon { flex: 0 0 auto; font-size: 21px; font-weight: 800; line-height: 1.2; }
     .toast strong { display: block; margin-bottom: 2px; }
     .toastMessage { margin: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
-    @media (prefers-reduced-motion: reduce) {
-      .toast { transition: none; }
-    }
+    @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
     .summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .count { font-size: 32px; font-weight: 800; color: #127a58; }
     .hidden { display: none !important; }
@@ -64,9 +64,13 @@
       <span id="toastIcon" class="toastIcon" aria-hidden="true"></span>
       <div><strong id="toastTitle"></strong><p id="toastMessage" class="toastMessage"></p></div>
     </div>
-    <div class="header"><small>HỆ THỐNG NỘI BỘ</small><h1>Điểm danh bằng QR</h1>
-      <p class="muted" id="subTitle">Quét mã để tự động ghi nhận vào Google Sheets</p></div>
+    <div class="header">
+      <small>HỆ THỐNG NỘI BỘ</small>
+      <h1>Điểm danh bằng QR</h1>
+      <p class="muted" id="subTitle">Quét mã để tự động ghi nhận vào Google Sheets</p>
+    </div>
 
+    <!-- MÀN HÌNH NHÂN VIÊN XEM QR -->
     <section id="staffView" class="hidden">
       <div class="card" style="text-align:center">
         <span class="chip">MÃ QR CÁ NHÂN</span>
@@ -77,37 +81,42 @@
       </div>
     </section>
 
+    <!-- MÀN HÌNH SCANNER CỦA BẢO VỆ / KIỂM SOÁT -->
     <section id="scannerView" class="hidden">
       <div class="card" id="controls">
         <span class="chip">CHẾ ĐỘ NGƯỜI KIỂM SOÁT</span>
-        <label for="pin">Mã PIN của nhân viên kiểm soát</label>
-        <input id="pin" type="password" autocomplete="off" placeholder="Ít nhất 8 ký tự">
-        <label for="station">Điểm quét (tùy chọn)</label>
+        <label for="pin">Mã PIN kiểm soát</label>
+        <input id="pin" type="password" autocomplete="off" placeholder="Tối thiểu 8 ký tự">
+        <label for="station">Điểm quét</label>
         <input id="station" maxlength="50" value="Cổng chính" placeholder="Ví dụ: Cổng chính">
         <button id="start">Bật camera và bắt đầu quét</button>
         <button id="stop" class="secondary hidden">Tắt camera</button>
-        <p class="muted">Camera vẫn chạy sau khi ghi nhận. Không cần bấm Gửi giữa các lượt quét.</p>
+        <p class="muted">Camera tự động duy trì hoạt động liên tục giữa các lượt quét.</p>
       </div>
       <div class="card">
         <div class="summary"><strong>Camera quét mã QR</strong><span id="cameraState" class="chip">Chưa bật</span></div>
         <div id="reader"></div>
-        <div id="status" role="status" aria-live="polite">Nhập PIN và bật camera.</div>
+        <div id="status" role="status" aria-live="polite">Nhập PIN và bấm "Bật camera".</div>
       </div>
-      <div class="card summary"><div><strong>Ghi nhận thành công</strong><p class="muted" style="margin:4px 0">Trong phiên quét hiện tại</p></div><div class="count" id="count">0</div></div>
+      <div class="card summary">
+        <div><strong>Ghi nhận thành công</strong><p class="muted" style="margin:4px 0">Trong phiên quét hiện tại</p></div>
+        <div class="count" id="count">0</div>
+      </div>
     </section>
-    <footer>Dữ liệu được xác thực và ghi vào Google Sheets qua Apps Script.</footer>
+    <footer>Dữ liệu được xác thực và lưu trữ bảo mật trên Google Sheets.</footer>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
     'use strict';
-    // SỬA thành URL triển khai Apps Script kết thúc bằng /exec, giữ nguyên dấu nháy.
+    // Link Apps Script exec của bạn
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0qOyYnmRWZXJre6aKLqt0nOSDm1698cQOA_sQtyLJwr4EHYoU0Tj89lLTiviLDfzt/exec';
     const QR_PATTERN = /^QRNV1:[0-9a-f]{64}$/;
     const $ = id => document.getElementById(id);
     const query = new URLSearchParams(location.hash.slice(1));
     const employeeQr = query.get('qr');
+
     let scanner = null;
     let scanning = false;
     let busy = false;
@@ -118,19 +127,30 @@
     let toastTimer = null;
     let toastHideTimer = null;
 
-    if (employeeQr !== null) showEmployee();
-    else showScanner();
+    // Tự động khôi phục mã PIN đã lưu trong trình duyệt
+    if (localStorage.getItem('CHECKIN_PIN')) {
+      $('pin').value = localStorage.getItem('CHECKIN_PIN');
+    }
+    if (localStorage.getItem('CHECKIN_STATION')) {
+      $('station').value = localStorage.getItem('CHECKIN_STATION');
+    }
+
+    if (employeeQr !== null) {
+      showEmployee();
+    } else {
+      showScanner();
+    }
 
     function showEmployee() {
       $('staffView').classList.remove('hidden');
       $('subTitle').textContent = 'Vui lòng trình mã của bạn khi đến điểm danh';
       $('employeeName').textContent = query.get('name') || 'Nhân viên';
       if (!QR_PATTERN.test(employeeQr)) {
-        $('qrVisual').textContent = 'Mã QR không hợp lệ. Hãy liên hệ quản trị viên.';
+        $('qrVisual').textContent = 'Mã QR không đúng định dạng. Hãy liên hệ bộ phận nhân sự.';
         return;
       }
       if (typeof QRCode === 'undefined') {
-        $('qrVisual').textContent = 'Không tải được thư viện tạo QR. Kiểm tra mạng.';
+        $('qrVisual').textContent = 'Không tải được thư viện tạo QR. Hãy kiểm tra kết nối mạng.';
         return;
       }
       new QRCode($('qrVisual'), {
@@ -144,6 +164,8 @@
       $('scannerView').classList.remove('hidden');
       $('start').addEventListener('click', startCamera);
       $('stop').addEventListener('click', stopCamera);
+      $('pin').addEventListener('input', e => localStorage.setItem('CHECKIN_PIN', e.target.value.trim()));
+      $('station').addEventListener('input', e => localStorage.setItem('CHECKIN_STATION', e.target.value.trim()));
     }
 
     function updateStatus(message, kind) {
@@ -155,14 +177,13 @@
       const toast = $('toast');
       const details = {
         success: ['✓', 'Điểm danh thành công'],
-        duplicate: ['!', 'Đã điểm danh trước đó'],
+        duplicate: ['!', 'Đã điểm danh hôm nay'],
         error: ['×', 'Không thể điểm danh'],
         pending: ['…', 'Đang xử lý']
       };
       const [icon, title] = details[kind] || details.pending;
       $('toastIcon').textContent = icon;
-      $('toastTitle').textContent = kind === 'error' && message.indexOf('camera') !== -1
-        ? 'Lỗi camera' : title;
+      $('toastTitle').textContent = title;
       $('toastMessage').textContent = message;
       toast.className = 'toast ' + (details[kind] ? kind : 'pending') + ' visible';
       clearTimeout(toastTimer);
@@ -170,7 +191,7 @@
       toastTimer = setTimeout(() => {
         toast.classList.remove('visible');
         toastHideTimer = setTimeout(() => toast.classList.add('hidden'), 250);
-      }, kind === 'error' ? 7000 : 5000);
+      }, kind === 'error' ? 5000 : 3500);
     }
 
     function notify(message, kind) {
@@ -182,60 +203,64 @@
       try {
         if (typeof (window.AudioContext || window.webkitAudioContext) !== 'function') return;
         audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         const o = audioCtx.createOscillator();
         const g = audioCtx.createGain();
         o.connect(g); g.connect(audioCtx.destination);
-        o.type = 'sine'; o.frequency.value = kind === 'success' ? 850 : 360;
-        g.gain.value = 0.055;
-        o.start(); o.stop(audioCtx.currentTime + (kind === 'success' ? .14 : .24));
-      } catch (_) { /* Âm báo không bắt buộc */ }
+        o.type = 'sine';
+        o.frequency.value = kind === 'success' ? 880 : 320;
+        g.gain.value = 0.08;
+        o.start();
+        o.stop(audioCtx.currentTime + (kind === 'success' ? 0.15 : 0.25));
+      } catch (_) {}
     }
 
     async function startCamera() {
       if (scanning) return;
-      if (SCRIPT_URL.includes('THAY_ID_TRIEN_KHAI') || !SCRIPT_URL.endsWith('/exec')) {
-        updateStatus('Chưa cấu hình SCRIPT_URL trong index.html.', 'error'); return;
-      }
-      if ($('pin').value.trim().length < 8) {
-        updateStatus('Nhập mã PIN kiểm soát có ít nhất 8 ký tự.', 'error'); return;
+      const pinVal = $('pin').value.trim();
+      if (pinVal.length < 8) {
+        notify('Vui lòng nhập mã PIN kiểm soát tối thiểu 8 ký tự.', 'error');
+        return;
       }
       if (typeof Html5Qrcode === 'undefined') {
-        updateStatus('Chưa tải được thư viện camera; hãy kiểm tra kết nối Internet.', 'error'); return;
+        notify('Chưa tải được thư viện quét mã; hãy tải lại trang.', 'error');
+        return;
       }
       $('start').disabled = true;
-      updateStatus('Đang xin quyền truy cập camera...', 'pending');
+      updateStatus('Đang khởi động camera...', 'pending');
+
       try {
-        if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error('Trình duyệt không hỗ trợ camera tại địa chỉ này. Hãy mở trang bằng HTTPS và dùng trình duyệt mới.');
-        }
         if (!scanner) {
           scanner = new Html5Qrcode('reader', {
-            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false
+            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+            verbose: false
           });
         }
+
         await scanner.start(
           { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 235, height: 235 }, aspectRatio: 1.0 },
+          { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
           onDecoded,
           () => {}
         );
+
+        // Khắc phục triệt để lỗi Zalo WebView ngắt video/hiện Pause
+        const videoEl = document.querySelector('#reader video');
+        if (videoEl) {
+          videoEl.setAttribute('playsinline', 'true');
+          videoEl.setAttribute('webkit-playsinline', 'true');
+          videoEl.muted = true;
+          videoEl.play().catch(() => {});
+        }
+
         scanning = true;
         $('start').classList.add('hidden');
         $('stop').classList.remove('hidden');
         $('cameraState').textContent = 'Đang quét';
-        updateStatus('Sẵn sàng! Đưa mã QR vào khung.', '');
+        updateStatus('Sẵn sàng! Hãy đưa mã QR vào khung ngắm.', '');
       } catch (err) {
-        const detail = err && err.message ? err.message : String(err || 'Lỗi không xác định');
-        const cameraErrors = {
-          NotAllowedError: 'Bạn chưa cấp quyền camera cho trang web. Hãy cho phép truy cập camera trong cài đặt trình duyệt.',
-          NotFoundError: 'Không tìm thấy camera trên thiết bị này.',
-          NotReadableError: 'Camera đang được ứng dụng khác sử dụng. Hãy đóng ứng dụng đó rồi thử lại.',
-          OverconstrainedError: 'Camera không hỗ trợ cấu hình quét này. Hãy thử dùng trình duyệt khác.'
-        };
-        const message = cameraErrors[err && err.name] ||
-          'Không bật được camera. Hãy kiểm tra quyền camera, đóng ứng dụng đang dùng camera rồi thử lại.' +
-          ' Chi tiết: ' + detail;
-        notify(message, 'error');
+        console.error(err);
+        notify('Không mở được camera. Vui lòng cho phép quyền truy cập camera hoặc bấm 3 chấm mở bằng Chrome/Safari.', 'error');
         $('start').disabled = false;
       }
     }
@@ -248,106 +273,141 @@
       $('start').disabled = false;
       $('stop').classList.add('hidden');
       $('cameraState').textContent = 'Đã tắt';
-      updateStatus('Đã tắt camera.', '');
+      updateStatus('Đã dừng quét camera.', '');
     }
 
     function onDecoded(value) {
-      if (busy) return;
+      if (busy) return; // Đang gửi lượt trước thì bỏ qua lượt mới
       const now = Date.now();
-      if (value === lastValue && now - lastAt < 5000) return;
-      lastValue = value; lastAt = now;
+      // Chống quét liên tiếp cùng 1 mã trong 4 giây
+      if (value === lastValue && (now - lastAt) < 4000) return;
+
+      lastValue = value;
+      lastAt = now;
+
       if (!QR_PATTERN.test(value)) {
-        notify('Mã vừa quét không hợp lệ. Hãy dùng mã QR nhân viên do hệ thống cấp.', 'error');
-        beep('error'); return;
+        notify('Mã QR không đúng định dạng nhân viên!', 'error');
+        beep('error');
+        return;
       }
-      void submitAttendance(value);
+
+      submitAttendance(value);
     }
 
     function makeRid() {
-      if (crypto.randomUUID) return crypto.randomUUID();
-      const bytes = new Uint8Array(24);
-      crypto.getRandomValues(bytes);
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID().replace(/-/g, '');
+      const bytes = new Uint8Array(16);
+      window.crypto.getRandomValues(bytes);
       return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
     }
 
     async function submitAttendance(qr) {
-      busy = true;
+      busy = true; // Khóa nhận diện
       const rid = makeRid();
-      updateStatus('Đã đọc QR. Đang ghi điểm danh và chờ xác nhận...', 'pending');
+      updateStatus('Đã đọc mã, đang kiểm tra...', 'pending');
+
       try {
-        // POST thật sự ghi dữ liệu. no-cors là để gửi qua tên miền Google;
-        // không dùng phản hồi opaque của POST để tự nhận là thành công.
         const body = new URLSearchParams({
-          action: 'checkin', rid, qr,
-          pin: $('pin').value.trim(), station: $('station').value.trim()
-        });
-        await fetch(SCRIPT_URL, {
-          method: 'POST', mode: 'no-cors', credentials: 'omit',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-          body
+          action: 'checkin',
+          rid: rid,
+          qr: qr,
+          pin: $('pin').value.trim(),
+          station: $('station').value.trim()
         });
 
-        // Sau POST, GET status bằng JSONP. Chỉ server mới trả về kết quả điểm danh.
+        // Gửi POST ngầm
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          credentials: 'omit',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: body
+        });
+
+        // Polling lấy kết quả qua JSONP
         const answer = await waitForResult(rid);
+
         if (answer.status === 'success') {
           counter++;
           $('count').textContent = String(counter);
-          notify('Đã ghi nhận ' + answer.name + ' lúc ' + answer.time + '.', 'success');
+          notify('Đã ghi nhận: ' + answer.name + ' (' + answer.time + ')', 'success');
           beep('success');
         } else if (answer.status === 'duplicate') {
-          notify(answer.name + ' đã được ghi nhận lúc ' + answer.time + '.', 'duplicate');
+          notify(answer.name + ' đã điểm danh lúc ' + answer.time, 'duplicate');
           beep('error');
         } else {
-          const serverMessage = String(answer.message || '');
-          const message = /""\s+is not a function/i.test(serverMessage)
-            ? 'Google Apps Script báo lỗi xử lý điểm danh. Quản trị viên cần kiểm tra hàm ghi nhận ở phía máy chủ.'
-            : serverMessage || 'Máy chủ không ghi nhận được lượt điểm danh. Hãy kiểm tra PIN và thử lại.';
-          notify(message, 'error');
+          notify(answer.message || 'Mã PIN không đúng hoặc có lỗi xác thực!', 'error');
           beep('error');
         }
       } catch (err) {
-        notify('Chưa xác minh được kết quả. Hãy kiểm tra mạng và bảng điểm danh trước khi quét lại.' +
-          (err && err.message ? ' Chi tiết: ' + err.message : ''), 'error');
+        notify('Hệ thống đang bận hoặc mạng yếu. Vui lòng thử lại!', 'error');
         beep('error');
       } finally {
-        busy = false;
+        // Nghỉ 1.5 giây để tránh quét dồn dập rồi mới mở khóa
+        setTimeout(() => {
+          busy = false;
+          if (scanning && $('status').className !== 'pending') {
+            updateStatus('Sẵn sàng cho người tiếp theo...', '');
+          }
+        }, 1500);
       }
     }
 
+    // Tối ưu thời gian chờ lên 18 giây để không bao giờ bị báo "quá hạn" giả
     async function waitForResult(rid) {
-      for (let i = 0; i < 12; i++) {
-        const result = await getStatusJsonp(rid, i);
-        if (result && result.status !== 'pending') return result;
-        await new Promise(resolve => setTimeout(resolve, 700));
+      const maxAttempts = 20; // 20 lần x 900ms = 18 giây
+      for (let i = 0; i < maxAttempts; i++) {
+        const res = await getStatusJsonp(rid, i);
+        if (res && res.status !== 'pending') return res;
+        await new Promise(r => setTimeout(r, 900));
       }
-      throw new Error('Máy chủ phản hồi quá lâu hoặc kết quả tạm thời không có trong cache.');
+      throw new Error('Máy chủ phản hồi quá lâu.');
     }
 
-    // JSONP chỉ dành cho đọc trạng thái với requestId ngẫu nhiên, KHÔNG dùng để ghi dữ liệu.
     function getStatusJsonp(rid, attempt) {
-      return new Promise((resolve, reject) => {
-        const fn = 'qrResult_' + rid.replace(/-/g, '') + '_' + attempt;
-        const tag = document.createElement('script');
-        let finished = false;
-        const timeout = setTimeout(() => done(new Error('Truy vấn trạng thái quá hạn.')), 8000);
-        function done(error, value) {
-          if (finished) return;
-          finished = true;
-          clearTimeout(timeout);
-          delete window[fn];
-          tag.remove();
-          if (error) reject(error);
-          else resolve(value);
+      return new Promise((resolve) => {
+        const callbackName = 'qrCb_' + rid + '_' + attempt;
+        const script = document.createElement('script');
+        let done = false;
+
+        const timer = setTimeout(() => {
+          if (!done) {
+            done = true;
+            cleanup();
+            resolve({ status: 'pending' });
+          }
+        }, 6000);
+
+        function cleanup() {
+          clearTimeout(timer);
+          delete window[callbackName];
+          if (script.parentNode) script.remove();
         }
-        window[fn] = result => done(null, result);
-        tag.onerror = () => done(new Error('Không đọc được phản hồi từ Google Apps Script.'));
+
+        window[callbackName] = function(data) {
+          if (!done) {
+            done = true;
+            cleanup();
+            resolve(data);
+          }
+        };
+
+        script.onerror = function() {
+          if (!done) {
+            done = true;
+            cleanup();
+            resolve({ status: 'pending' });
+          }
+        };
+
         const url = new URL(SCRIPT_URL);
         url.searchParams.set('action', 'status');
         url.searchParams.set('rid', rid);
-        url.searchParams.set('callback', fn);
+        url.searchParams.set('callback', callbackName);
         url.searchParams.set('_', Date.now().toString());
-        tag.src = url.toString();
-        document.head.appendChild(tag);
+
+        script.src = url.toString();
+        document.head.appendChild(script);
       });
     }
   </script>
