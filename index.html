@@ -102,7 +102,7 @@
     // Link Apps Script exec của bạn
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyTAalMbou70abVJV25P0Lkfb-6Z0ylpsgLM_2roQSTwkIALttMtmoUMqjaxdaGl0g6sw/exec';
     const QR_PATTERN = /^QRNV1:[0-9a-f]{64}$/;
-    const RESULT_DISPLAY_MS = 4000;
+    const RESULT_DISPLAY_MS = 3000;
     const READY_STATUS = 'Sẵn sàng cho người tiếp theo...';
     const $ = id => document.getElementById(id);
     const query = new URLSearchParams(location.hash.slice(1));
@@ -382,7 +382,12 @@
       isProcessing = false;
       lastResultAt = Date.now();
       if (!qrVisible) lastScannedToken = '';
-      if (!qrVisible) scheduleReadyAfterResult();
+      clearTimeout(resultTimer);
+      resultTimer = setTimeout(() => {
+        if (scanning && !isProcessing) {
+          updateStatus(READY_STATUS, '');
+        }
+      }, RESULT_DISPLAY_MS);
     }
   </script>
 </body>
