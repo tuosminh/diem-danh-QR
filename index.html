@@ -21,8 +21,11 @@
     button { display: block; width: 100%; border: 0; border-radius: 10px; background: #116d66; color: #fff; padding: 14px; font: inherit; font-weight: 700; font-size: 17px; cursor: pointer; margin-top: 14px; }
     button:disabled { opacity: .55; cursor: not-allowed; }
     button.secondary { background: #dfe8ee; color: #203a4c; }
-    #reader { margin: 12px auto; max-width: 100%; border-radius: 12px; overflow: hidden; background: #000; min-height: 250px; }
-    #reader video { width: 100% !important; height: auto !important; object-fit: cover !important; }
+    #reader { position: relative; width: 100%; aspect-ratio: 1 / 1; margin: 12px auto;
+      border-radius: 12px; overflow: hidden; background: #000; }
+    #reader #reader__scan_region { width: 100% !important; height: 100% !important; min-height: 0 !important; }
+    #reader video { display: block !important; width: 100% !important; height: 100% !important;
+      object-fit: cover !important; }
     #qrVisual { background: #fff; padding: 16px; display: flex; justify-content: center; }
     #status { padding: 15px; border-radius: 12px; font-size: 16px; font-weight: 700;
       background: #e8eef3; color: #24485f; min-height: 60px; display: flex; align-items: center; justify-content: center; text-align: center; transition: all 0.2s ease; }
@@ -198,7 +201,13 @@
 
         await scanner.start(
           { facingMode: 'environment' },
-          { fps: 15, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+          {
+            fps: 15,
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.78);
+              return { width: size, height: size };
+            }
+          },
           onScanSuccess,
           onScanFailure
         );
