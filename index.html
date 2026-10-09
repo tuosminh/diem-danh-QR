@@ -103,7 +103,7 @@
   <script>
     'use strict';
     // SỬA thành URL triển khai Apps Script kết thúc bằng /exec, giữ nguyên dấu nháy.
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnKIuJ3YJsygSxUh8Sv5iYSTdOJNQ3S2rn5aVYyBTvBr0GfA06tJGjuFzMwYsH9z5qZA/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0qOyYnmRWZXJre6aKLqt0nOSDm1698cQOA_sQtyLJwr4EHYoU0Tj89lLTiviLDfzt/exec';
     const QR_PATTERN = /^QRNV1:[0-9a-f]{64}$/;
     const $ = id => document.getElementById(id);
     const query = new URLSearchParams(location.hash.slice(1));
@@ -292,10 +292,10 @@
         if (answer.status === 'success') {
           counter++;
           $('count').textContent = String(counter);
-          notify('Đã ghi nhận ' + answer.name + ' (' + answer.id + ') lúc ' + answer.time + '.', 'success');
+          notify('Đã ghi nhận ' + answer.name + ' lúc ' + answer.time + '.', 'success');
           beep('success');
         } else if (answer.status === 'duplicate') {
-          notify(answer.name + ' (' + answer.id + ') đã được ghi nhận lúc ' + answer.time + '.', 'duplicate');
+          notify(answer.name + ' đã được ghi nhận lúc ' + answer.time + '.', 'duplicate');
           beep('error');
         } else {
           const serverMessage = String(answer.message || '');
