@@ -13,61 +13,48 @@
     .header { text-align: center; margin-bottom: 18px; }
     .header small { letter-spacing: 2px; color: #42657c; font-weight: 700; }
     h1 { font-size: clamp(23px,6vw,31px); line-height: 1.18; margin: 7px 0; }
-    p { line-height: 1.5; }
     .card { background: #fff; border: 1px solid #d8e3eb; border-radius: 16px;
       box-shadow: 0 6px 22px rgba(16,44,68,.06); padding: 18px; margin-bottom: 14px; }
     .muted { color: #5c7082; font-size: 14px; }
     label { display: block; margin: 12px 0 6px; font-weight: 700; }
-    input { width: 100%; border: 1px solid #b6cad8; border-radius: 10px; padding: 13px;
-      font: inherit; font-size: 17px; }
-    button { display: block; width: 100%; border: 0; border-radius: 10px;
-      background: #116d66; color: #fff; padding: 14px; font: inherit; font-weight: 700;
-      font-size: 17px; cursor: pointer; margin-top: 14px; }
+    input { width: 100%; border: 1px solid #b6cad8; border-radius: 10px; padding: 13px; font: inherit; font-size: 17px; }
+    button { display: block; width: 100%; border: 0; border-radius: 10px; background: #116d66; color: #fff; padding: 14px; font: inherit; font-weight: 700; font-size: 17px; cursor: pointer; margin-top: 14px; }
     button:disabled { opacity: .55; cursor: not-allowed; }
     button.secondary { background: #dfe8ee; color: #203a4c; }
-    #reader { margin: 12px auto; max-width: 100%; border-radius: 12px; overflow: hidden; background: #000; }
-    /* Ép video tuân thủ hiển thị inline, tránh bị Zalo đóng băng thành MP4 */
+    #reader { margin: 12px auto; max-width: 100%; border-radius: 12px; overflow: hidden; background: #000; min-height: 250px; }
     #reader video { width: 100% !important; height: auto !important; object-fit: cover !important; }
     #qrVisual { background: #fff; padding: 16px; display: flex; justify-content: center; }
-    #qrVisual img, #qrVisual canvas { max-width: 100%; height: auto; }
     #status { padding: 15px; border-radius: 12px; font-size: 16px; font-weight: 700;
-      background: #e8eef3; color: #24485f; min-height: 60px; display: flex; align-items: center; justify-content: center; text-align: center; }
+      background: #e8eef3; color: #24485f; min-height: 60px; display: flex; align-items: center; justify-content: center; text-align: center; transition: all 0.2s ease; }
     #status.success { background: #dcf5e7; color: #08693b; }
     #status.duplicate { background: #fff1cd; color: #7d5400; }
     #status.error { background: #fde5e5; color: #9b2222; }
-    #status.pending { background: #e6f0ff; color: #244c91; }
+    #status.scanning { background: #e6f0ff; color: #185abc; border: 2px dashed #185abc; }
     .toast { position: fixed; z-index: 1000; top: calc(env(safe-area-inset-top, 0px) + 12px);
       left: 50%; width: min(460px, calc(100vw - 24px)); display: flex; align-items: flex-start;
-      gap: 12px; padding: 14px 16px; border: 1px solid transparent; border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(16,44,68,.2); opacity: 0; pointer-events: none;
-      transform: translate(-50%, -12px); transition: opacity .2s ease, transform .2s ease; }
+      gap: 12px; padding: 14px 16px; border-radius: 14px; box-shadow: 0 10px 30px rgba(16,44,68,.2);
+      opacity: 0; pointer-events: none; transform: translate(-50%, -12px); transition: opacity .2s ease, transform .2s ease; }
     .toast.visible { opacity: 1; transform: translate(-50%, 0); }
-    .toast.success { background: #dcf5e7; border-color: #a9dfbf; color: #075c35; }
-    .toast.duplicate { background: #fff1cd; border-color: #efd68d; color: #704b00; }
-    .toast.error { background: #fde5e5; border-color: #f2bcbc; color: #8d1e1e; }
-    .toast.pending { background: #e6f0ff; border-color: #bfd1f5; color: #244c91; }
-    .toastIcon { flex: 0 0 auto; font-size: 21px; font-weight: 800; line-height: 1.2; }
-    .toast strong { display: block; margin-bottom: 2px; }
-    .toastMessage { margin: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
-    @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+    .toast.success { background: #dcf5e7; color: #075c35; border: 1px solid #a9dfbf; }
+    .toast.duplicate { background: #fff1cd; color: #704b00; border: 1px solid #efd68d; }
+    .toast.error { background: #fde5e5; color: #8d1e1e; border: 1px solid #f2bcbc; }
     .summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .count { font-size: 32px; font-weight: 800; color: #127a58; }
     .hidden { display: none !important; }
-    .chip { display: inline-block; padding: 7px 10px; border-radius: 100px;
-      background: #e0f0f0; color: #116d66; font-size: 13px; font-weight: 700; }
+    .chip { display: inline-block; padding: 6px 12px; border-radius: 100px; background: #e0f0f0; color: #116d66; font-size: 13px; font-weight: 700; }
     footer { margin-top: 18px; color: #698093; font-size: 12px; text-align: center; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div id="toast" class="toast hidden" role="status" aria-live="polite" aria-atomic="true">
-      <span id="toastIcon" class="toastIcon" aria-hidden="true"></span>
-      <div><strong id="toastTitle"></strong><p id="toastMessage" class="toastMessage"></p></div>
+    <div id="toast" class="toast hidden" role="status">
+      <span id="toastIcon" style="font-size: 20px; font-weight: bold;"></span>
+      <div><strong id="toastTitle"></strong><p id="toastMessage" style="margin:2px 0 0; font-size: 14px;"></p></div>
     </div>
     <div class="header">
       <small>HỆ THỐNG NỘI BỘ</small>
       <h1>Điểm danh bằng QR</h1>
-      <p class="muted" id="subTitle">Quét mã để tự động ghi nhận vào Google Sheets</p>
+      <p class="muted" id="subTitle">Quét mã để ghi nhận vào Google Sheets</p>
     </div>
 
     <!-- MÀN HÌNH NHÂN VIÊN XEM QR -->
@@ -76,34 +63,33 @@
         <span class="chip">MÃ QR CÁ NHÂN</span>
         <h2 id="employeeName">Nhân viên</h2>
         <div id="qrVisual"></div>
-        <p class="muted">Đưa mã này cho nhân viên kiểm soát quét. Bạn có thể chụp màn hình để lưu.</p>
-        <p class="muted"><strong>Lưu ý:</strong> Không chia sẻ mã QR cho người khác.</p>
+        <p class="muted">Trình mã này cho nhân viên kiểm soát.</p>
       </div>
     </section>
 
-    <!-- MÀN HÌNH SCANNER CỦA BẢO VỆ / KIỂM SOÁT -->
+    <!-- MÀN HÌNH SCANNER -->
     <section id="scannerView" class="hidden">
       <div class="card" id="controls">
-        <span class="chip">CHẾ ĐỘ NGƯỜI KIỂM SOÁT</span>
+        <span class="chip">CHẾ ĐỘ KIỂM SOÁT</span>
         <label for="pin">Mã PIN kiểm soát</label>
-        <input id="pin" type="password" autocomplete="off" placeholder="Tối thiểu 8 ký tự">
+        <input id="pin" type="password" autocomplete="off" placeholder="Nhập PIN đã cấu hình trong Apps Script">
         <label for="station">Điểm quét</label>
-        <input id="station" maxlength="50" value="Cổng chính" placeholder="Ví dụ: Cổng chính">
+        <input id="station" maxlength="50" value="Cổng chính">
         <button id="start">Bật camera và bắt đầu quét</button>
         <button id="stop" class="secondary hidden">Tắt camera</button>
-        <p class="muted">Camera tự động duy trì hoạt động liên tục giữa các lượt quét.</p>
+        <p class="muted">Đưa mã QR vào khung để nhận diện; lấy mã ra khỏi khung để sẵn sàng cho lượt tiếp theo.</p>
       </div>
       <div class="card">
         <div class="summary"><strong>Camera quét mã QR</strong><span id="cameraState" class="chip">Chưa bật</span></div>
         <div id="reader"></div>
-        <div id="status" role="status" aria-live="polite">Nhập PIN và bấm "Bật camera".</div>
+        <div id="status">Nhập PIN và bấm Bật camera.</div>
       </div>
       <div class="card summary">
-        <div><strong>Ghi nhận thành công</strong><p class="muted" style="margin:4px 0">Trong phiên quét hiện tại</p></div>
+        <div><strong>Đã điểm danh thành công</strong><p class="muted" style="margin:4px 0">Trong phiên quét hiện tại</p></div>
         <div class="count" id="count">0</div>
       </div>
     </section>
-    <footer>Dữ liệu được xác thực và lưu trữ bảo mật trên Google Sheets.</footer>
+    <footer>Dữ liệu đồng bộ trực tiếp với Google Sheets.</footer>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -119,39 +105,28 @@
 
     let scanner = null;
     let scanning = false;
-    let busy = false;
+    let isProcessing = false;
     let counter = 0;
-    let lastValue = '';
-    let lastAt = 0;
+    let lastScannedToken = '';
+    let qrVisible = false;
+    let qrLossTimer = null;
+    let resultTimer = null;
     let audioCtx = null;
     let toastTimer = null;
-    let toastHideTimer = null;
 
-    // Tự động khôi phục mã PIN đã lưu trong trình duyệt
-    if (localStorage.getItem('CHECKIN_PIN')) {
-      $('pin').value = localStorage.getItem('CHECKIN_PIN');
-    }
-    if (localStorage.getItem('CHECKIN_STATION')) {
-      $('station').value = localStorage.getItem('CHECKIN_STATION');
-    }
+    // Bỏ PIN cũ đã lưu từ các phiên bản trước; không lưu PIN trong trình duyệt.
+    localStorage.removeItem('CHECKIN_PIN');
+    $('pin').value = '';
+    $('station').value = localStorage.getItem('CHECKIN_STATION') || 'Cổng chính';
 
-    if (employeeQr !== null) {
-      showEmployee();
-    } else {
-      showScanner();
-    }
+    if (employeeQr !== null) showEmployee();
+    else showScanner();
 
     function showEmployee() {
       $('staffView').classList.remove('hidden');
-      $('subTitle').textContent = 'Vui lòng trình mã của bạn khi đến điểm danh';
       $('employeeName').textContent = query.get('name') || 'Nhân viên';
       if (!QR_PATTERN.test(employeeQr)) {
-        $('qrVisual').textContent = 'Mã QR không đúng định dạng. Hãy liên hệ bộ phận nhân sự.';
-        return;
-      }
-      if (typeof QRCode === 'undefined') {
-        $('qrVisual').textContent = 'Không tải được thư viện tạo QR. Hãy kiểm tra kết nối mạng.';
-        return;
+        $('qrVisual').textContent = 'Mã QR không đúng định dạng.'; return;
       }
       new QRCode($('qrVisual'), {
         text: employeeQr, width: 260, height: 260,
@@ -164,54 +139,40 @@
       $('scannerView').classList.remove('hidden');
       $('start').addEventListener('click', startCamera);
       $('stop').addEventListener('click', stopCamera);
-      $('pin').addEventListener('input', e => localStorage.setItem('CHECKIN_PIN', e.target.value.trim()));
       $('station').addEventListener('input', e => localStorage.setItem('CHECKIN_STATION', e.target.value.trim()));
     }
 
-    function updateStatus(message, kind) {
+    function updateStatus(text, kind) {
       $('status').className = kind || '';
-      $('status').textContent = message;
+      $('status').textContent = text;
     }
 
     function showToast(message, kind) {
       const toast = $('toast');
       const details = {
         success: ['✓', 'Điểm danh thành công'],
-        duplicate: ['!', 'Đã điểm danh hôm nay'],
-        error: ['×', 'Không thể điểm danh'],
-        pending: ['…', 'Đang xử lý']
+        duplicate: ['!', 'Đã điểm danh trước đó'],
+        error: ['×', 'Lỗi']
       };
-      const [icon, title] = details[kind] || details.pending;
+      const [icon, title] = details[kind] || ['ℹ', 'Thông báo'];
       $('toastIcon').textContent = icon;
       $('toastTitle').textContent = title;
       $('toastMessage').textContent = message;
-      toast.className = 'toast ' + (details[kind] ? kind : 'pending') + ' visible';
+      toast.className = 'toast ' + kind + ' visible';
       clearTimeout(toastTimer);
-      clearTimeout(toastHideTimer);
-      toastTimer = setTimeout(() => {
-        toast.classList.remove('visible');
-        toastHideTimer = setTimeout(() => toast.classList.add('hidden'), 250);
-      }, kind === 'error' ? 5000 : 3500);
+      toastTimer = setTimeout(() => toast.classList.remove('visible'), 3500);
     }
 
-    function notify(message, kind) {
-      updateStatus(message, kind);
-      showToast(message, kind);
-    }
-
-    function beep(kind) {
+    function beep(success) {
       try {
-        if (typeof (window.AudioContext || window.webkitAudioContext) !== 'function') return;
         audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        const o = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        o.connect(g); g.connect(audioCtx.destination);
-        o.type = 'sine';
-        o.frequency.value = kind === 'success' ? 880 : 320;
-        g.gain.value = 0.08;
-        o.start();
-        o.stop(audioCtx.currentTime + (kind === 'success' ? 0.15 : 0.25));
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.value = success ? 880 : 300;
+        gain.gain.value = 0.08;
+        osc.start(); osc.stop(audioCtx.currentTime + (success ? 0.15 : 0.3));
       } catch (_) {}
     }
 
@@ -219,15 +180,13 @@
       if (scanning) return;
       const pinVal = $('pin').value.trim();
       if (pinVal.length < 8) {
-        notify('Vui lòng nhập mã PIN kiểm soát tối thiểu 8 ký tự.', 'error');
+        updateStatus('PIN kiểm soát phải có ít nhất 8 ký tự.', 'error');
         return;
       }
-      if (typeof Html5Qrcode === 'undefined') {
-        notify('Chưa tải được thư viện quét mã; hãy tải lại trang.', 'error');
-        return;
-      }
+      $('pin').value = pinVal;
+
       $('start').disabled = true;
-      updateStatus('Đang khởi động camera...', 'pending');
+      updateStatus('Đang khởi động máy ảnh...', 'scanning');
 
       try {
         if (!scanner) {
@@ -239,176 +198,166 @@
 
         await scanner.start(
           { facingMode: 'environment' },
-          { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
-          onDecoded,
-          () => {}
+          { fps: 15, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+          onScanSuccess,
+          onScanFailure
         );
 
-        // Khắc phục triệt để lỗi Zalo WebView ngắt video/hiện Pause
-        const videoEl = document.querySelector('#reader video');
-        if (videoEl) {
-          videoEl.setAttribute('playsinline', 'true');
-          videoEl.setAttribute('webkit-playsinline', 'true');
-          videoEl.muted = true;
-          videoEl.play().catch(() => {});
+        // Chống lỗi video tự dừng trên Zalo/Safari
+        const video = document.querySelector('#reader video');
+        if (video) {
+          video.setAttribute('playsinline', 'true');
+          video.setAttribute('webkit-playsinline', 'true');
+          video.muted = true;
+          video.play().catch(() => {});
         }
 
         scanning = true;
         $('start').classList.add('hidden');
         $('stop').classList.remove('hidden');
         $('cameraState').textContent = 'Đang quét';
-        updateStatus('Sẵn sàng! Hãy đưa mã QR vào khung ngắm.', '');
+        updateStatus('Sẵn sàng cho người tiếp theo...', '');
       } catch (err) {
-        console.error(err);
-        notify('Không mở được camera. Vui lòng cho phép quyền truy cập camera hoặc bấm 3 chấm mở bằng Chrome/Safari.', 'error');
+        updateStatus('Không mở được camera. Hãy cấp quyền truy cập!', 'error');
         $('start').disabled = false;
       }
     }
 
     async function stopCamera() {
       if (!scanner || !scanning) return;
-      try { await scanner.stop(); } catch (_) {}
+      await scanner.stop();
       scanning = false;
+      clearTimeout(qrLossTimer);
+      clearTimeout(resultTimer);
+      qrVisible = false;
+      lastScannedToken = '';
       $('start').classList.remove('hidden');
       $('start').disabled = false;
       $('stop').classList.add('hidden');
       $('cameraState').textContent = 'Đã tắt';
-      updateStatus('Đã dừng quét camera.', '');
+      updateStatus('Camera đã dừng.', '');
     }
 
-    function onDecoded(value) {
-      if (busy) return; // Đang gửi lượt trước thì bỏ qua lượt mới
-      const now = Date.now();
-      // Chống quét liên tiếp cùng 1 mã trong 4 giây
-      if (value === lastValue && (now - lastAt) < 4000) return;
+    // Scanner success chỉ chạy khi thư viện đã giải mã được QR.
+    function onScanSuccess(decodedText) {
+      clearTimeout(qrLossTimer);
+      qrLossTimer = null;
+      qrVisible = true;
+      if (isProcessing) return;
 
-      lastValue = value;
-      lastAt = now;
+      if (decodedText === lastScannedToken) {
+        if ($('status').className !== 'scanning') {
+          updateStatus('Đã xử lý mã này. Hãy đưa QR ra khỏi khung để quét tiếp.', 'scanning');
+        }
+        return;
+      }
+      lastScannedToken = decodedText;
 
-      if (!QR_PATTERN.test(value)) {
-        notify('Mã QR không đúng định dạng nhân viên!', 'error');
-        beep('error');
+      if (!QR_PATTERN.test(decodedText)) {
+        updateStatus('Mã QR không hợp lệ. Hãy đưa mã ra khỏi khung rồi thử lại.', 'error');
+        beep(false);
         return;
       }
 
-      submitAttendance(value);
+      isProcessing = true;
+      clearTimeout(resultTimer);
+      updateStatus('Đã nhận dạng QR. Đang xác thực với máy chủ...', 'scanning');
+      guiDiemDanhNhanh(decodedText);
     }
 
-    function makeRid() {
-      if (window.crypto && crypto.randomUUID) return crypto.randomUUID().replace(/-/g, '');
-      const bytes = new Uint8Array(16);
-      window.crypto.getRandomValues(bytes);
-      return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    function onScanFailure() {
+      if (!lastScannedToken) return;
+      clearTimeout(qrLossTimer);
+      qrLossTimer = setTimeout(() => {
+        qrVisible = false;
+        if (!isProcessing) {
+          lastScannedToken = '';
+          updateStatus('Sẵn sàng cho người tiếp theo...', '');
+        }
+      }, 700);
     }
 
-    async function submitAttendance(qr) {
-      busy = true; // Khóa nhận diện
-      const rid = makeRid();
-      updateStatus('Đã đọc mã, đang kiểm tra...', 'pending');
+    function guiDiemDanhNhanh(qrCode) {
+      const pin = $('pin').value.trim();
+      const station = $('station').value.trim();
+      const cbName = 'cb_' + Date.now();
+      const script = document.createElement('script');
 
-      try {
-        const body = new URLSearchParams({
-          action: 'checkin',
-          rid: rid,
-          qr: qr,
-          pin: $('pin').value.trim(),
-          station: $('station').value.trim()
-        });
+      const timer = setTimeout(() => {
+        cleanup();
+        ketThucLuotQuet('Máy chủ chưa phản hồi sau 15 giây. Kiểm tra kết nối trước khi quét lại.', 'error');
+      }, 15000);
 
-        // Gửi POST ngầm
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          credentials: 'omit',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-          body: body
-        });
+      function cleanup() {
+        clearTimeout(timer);
+        delete window[cbName];
+        if (script.parentNode) script.remove();
+      }
 
-        // Polling lấy kết quả qua JSONP
-        const answer = await waitForResult(rid);
-
-        if (answer.status === 'success') {
+      window[cbName] = function(res) {
+        cleanup();
+        if (!res || typeof res.status !== 'string') {
+          beep(false);
+          ketThucLuotQuet('Phản hồi từ Apps Script không hợp lệ.', 'error');
+          return;
+        }
+        if (res.status === 'success') {
           counter++;
-          $('count').textContent = String(counter);
-          notify('Đã ghi nhận: ' + answer.name + ' (' + answer.time + ')', 'success');
-          beep('success');
-        } else if (answer.status === 'duplicate') {
-          notify(answer.name + ' đã điểm danh lúc ' + answer.time, 'duplicate');
-          beep('error');
+          $('count').textContent = counter;
+          beep(true);
+          showToast('Điểm danh thành công: ' + res.name, 'success');
+          ketThucLuotQuet('✓ Đã ghi nhận: ' + res.name + ' (' + res.time + ')', 'success');
+        } else if (res.status === 'duplicate') {
+          beep(false);
+          showToast(res.name + ' đã điểm danh trước đó!', 'duplicate');
+          ketThucLuotQuet('! ' + res.name + ' đã điểm danh lúc ' + res.time, 'duplicate');
         } else {
-          notify(answer.message || 'Mã PIN không đúng hoặc có lỗi xác thực!', 'error');
-          beep('error');
+          beep(false);
+          const message = String(res.message || 'Không thể xác thực lượt điểm danh.');
+          const safeMessage = /^sai mã pin/i.test(message)
+            ? 'Sai PIN kiểm soát. Hãy kiểm tra PIN đang được cấu hình trong Apps Script.'
+            : message;
+          showToast(safeMessage, 'error');
+          ketThucLuotQuet('× ' + safeMessage, 'error');
         }
-      } catch (err) {
-        notify('Hệ thống đang bận hoặc mạng yếu. Vui lòng thử lại!', 'error');
-        beep('error');
-      } finally {
-        // Nghỉ 1.5 giây để tránh quét dồn dập rồi mới mở khóa
-        setTimeout(() => {
-          busy = false;
-          if (scanning && $('status').className !== 'pending') {
-            updateStatus('Sẵn sàng cho người tiếp theo...', '');
-          }
-        }, 1500);
-      }
+      };
+
+      const url = new URL(SCRIPT_URL);
+      url.searchParams.set('action', 'checkin');
+      url.searchParams.set('qr', qrCode);
+      url.searchParams.set('pin', pin);
+      url.searchParams.set('station', station);
+      url.searchParams.set('callback', cbName);
+      url.searchParams.set('_', Date.now());
+
+      script.src = url.toString();
+      script.onerror = function() {
+        cleanup();
+        ketThucLuotQuet('Lỗi kết nối mạng đến Google Apps Script.', 'error');
+      };
+      document.head.appendChild(script);
     }
 
-    // Tối ưu thời gian chờ lên 18 giây để không bao giờ bị báo "quá hạn" giả
-    async function waitForResult(rid) {
-      const maxAttempts = 20; // 20 lần x 900ms = 18 giây
-      for (let i = 0; i < maxAttempts; i++) {
-        const res = await getStatusJsonp(rid, i);
-        if (res && res.status !== 'pending') return res;
-        await new Promise(r => setTimeout(r, 900));
+    function ketThucLuotQuet(thongBao, loai) {
+      updateStatus(thongBao, loai);
+      isProcessing = false;
+      clearTimeout(resultTimer);
+
+      if (qrVisible) {
+        resultTimer = setTimeout(() => {
+          if (scanning && !isProcessing && qrVisible) {
+            updateStatus('Đã xử lý xong. Hãy đưa QR ra khỏi khung để quét lượt tiếp theo.', 'scanning');
+          }
+        }, 900);
+        return;
       }
-      throw new Error('Máy chủ phản hồi quá lâu.');
-    }
 
-    function getStatusJsonp(rid, attempt) {
-      return new Promise((resolve) => {
-        const callbackName = 'qrCb_' + rid + '_' + attempt;
-        const script = document.createElement('script');
-        let done = false;
-
-        const timer = setTimeout(() => {
-          if (!done) {
-            done = true;
-            cleanup();
-            resolve({ status: 'pending' });
-          }
-        }, 6000);
-
-        function cleanup() {
-          clearTimeout(timer);
-          delete window[callbackName];
-          if (script.parentNode) script.remove();
+      lastScannedToken = '';
+      resultTimer = setTimeout(() => {
+        if (scanning && !isProcessing && !qrVisible) {
+          updateStatus('Sẵn sàng cho người tiếp theo...', '');
         }
-
-        window[callbackName] = function(data) {
-          if (!done) {
-            done = true;
-            cleanup();
-            resolve(data);
-          }
-        };
-
-        script.onerror = function() {
-          if (!done) {
-            done = true;
-            cleanup();
-            resolve({ status: 'pending' });
-          }
-        };
-
-        const url = new URL(SCRIPT_URL);
-        url.searchParams.set('action', 'status');
-        url.searchParams.set('rid', rid);
-        url.searchParams.set('callback', callbackName);
-        url.searchParams.set('_', Date.now().toString());
-
-        script.src = url.toString();
-        document.head.appendChild(script);
-      });
+      }, 1200);
     }
   </script>
 </body>
