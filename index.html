@@ -306,6 +306,7 @@
       const station = $('station').value.trim();
       const cbName = 'cb_' + Date.now();
       const script = document.createElement('script');
+      let callbackReceived = false;
 
       const timer = setTimeout(() => {
         cleanup();
@@ -321,6 +322,7 @@
       }
 
       window[cbName] = function(res) {
+        callbackReceived = true;
         cleanup();
         if (!res || typeof res.status !== 'string') {
           beep(false);
@@ -362,6 +364,13 @@
       script.onerror = function() {
         cleanup();
         const message = 'Không tải được phản hồi từ Google Apps Script. Kiểm tra URL /exec và quyền triển khai.';
+        showToast(message, 'error');
+        ketThucLuotQuet(message, 'error');
+      };
+      script.onload = function() {
+        if (callbackReceived) return;
+        cleanup();
+        const message = 'Apps Script có phản hồi nhưng không gọi JSONP callback. Kiểm tra URL /exec, quyền truy cập và phiên bản deploy.';
         showToast(message, 'error');
         ketThucLuotQuet(message, 'error');
       };
