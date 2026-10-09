@@ -19,5 +19,6 @@ GitHub Pages chỉ lưu trữ HTML, CSS và JavaScript tĩnh; nó không chạy 
 - Đảm bảo Apps Script và bảng tính đã được cấu hình, và quyền truy cập của web app phù hợp với quy trình nội bộ.
 - Không đưa PIN kiểm soát hoặc thông tin bí mật vào mã nguồn. PIN được nhập tại trang quét.
 - Camera chỉ hoạt động trên HTTPS (GitHub Pages hỗ trợ HTTPS) hoặc `localhost`. Cần cấp quyền camera và kết nối Internet để tải thư viện QR.
+- Để thử điểm danh, dùng mã QR hợp lệ của một nhân viên kiểm thử và PIN đúng. Lượt quét sẽ được ghi vào Google Sheets; sau khi xác nhận, có thể xóa riêng dòng kiểm thử trên sheet. Không xóa dòng của lượt điểm danh thật. Nếu Apps Script có lưu trạng thái chống trùng riêng ngoài sheet, cần xóa trạng thái đó theo cách cấu hình của Apps Script trước khi quét lại mã kiểm thử.
 
 Thay đổi `index.html` rồi đẩy lên `main` để website được triển khai lại tự động.

@@ -34,6 +34,22 @@
     #status.duplicate { background: #fff1cd; color: #7d5400; }
     #status.error { background: #fde5e5; color: #9b2222; }
     #status.pending { background: #e6f0ff; color: #244c91; }
+    .toast { position: fixed; z-index: 1000; top: calc(env(safe-area-inset-top, 0px) + 12px);
+      left: 50%; width: min(460px, calc(100vw - 24px)); display: flex; align-items: flex-start;
+      gap: 12px; padding: 14px 16px; border: 1px solid transparent; border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(16,44,68,.2); opacity: 0; pointer-events: none;
+      transform: translate(-50%, -12px); transition: opacity .2s ease, transform .2s ease; }
+    .toast.visible { opacity: 1; transform: translate(-50%, 0); }
+    .toast.success { background: #dcf5e7; border-color: #a9dfbf; color: #075c35; }
+    .toast.duplicate { background: #fff1cd; border-color: #efd68d; color: #704b00; }
+    .toast.error { background: #fde5e5; border-color: #f2bcbc; color: #8d1e1e; }
+    .toast.pending { background: #e6f0ff; border-color: #bfd1f5; color: #244c91; }
+    .toastIcon { flex: 0 0 auto; font-size: 21px; font-weight: 800; line-height: 1.2; }
+    .toast strong { display: block; margin-bottom: 2px; }
+    .toastMessage { margin: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+    @media (prefers-reduced-motion: reduce) {
+      .toast { transition: none; }
+    }
     .summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .count { font-size: 32px; font-weight: 800; color: #127a58; }
     .hidden { display: none !important; }
@@ -44,6 +60,10 @@
 </head>
 <body>
   <div class="wrap">
+    <div id="toast" class="toast hidden" role="status" aria-live="polite" aria-atomic="true">
+      <span id="toastIcon" class="toastIcon" aria-hidden="true"></span>
+      <div><strong id="toastTitle"></strong><p id="toastMessage" class="toastMessage"></p></div>
+    </div>
     <div class="header"><small>HỆ THỐNG NỘI BỘ</small><h1>Điểm danh bằng QR</h1>
       <p class="muted" id="subTitle">Quét mã để tự động ghi nhận vào Google Sheets</p></div>
 
@@ -95,6 +115,8 @@
     let lastValue = '';
     let lastAt = 0;
     let audioCtx = null;
+    let toastTimer = null;
+    let toastHideTimer = null;
 
     if (employeeQr !== null) showEmployee();
     else showScanner();
@@ -129,8 +151,36 @@
       $('status').textContent = message;
     }
 
+    function showToast(message, kind) {
+      const toast = $('toast');
+      const details = {
+        success: ['✓', 'Điểm danh thành công'],
+        duplicate: ['!', 'Đã điểm danh trước đó'],
+        error: ['×', 'Không thể điểm danh'],
+        pending: ['…', 'Đang xử lý']
+      };
+      const [icon, title] = details[kind] || details.pending;
+      $('toastIcon').textContent = icon;
+      $('toastTitle').textContent = title;
+      $('toastMessage').textContent = message;
+      toast.className = 'toast ' + (details[kind] ? kind : 'pending');
+      requestAnimationFrame(() => toast.classList.add('visible'));
+      clearTimeout(toastTimer);
+      clearTimeout(toastHideTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+        toastHideTimer = setTimeout(() => toast.classList.add('hidden'), 250);
+      }, kind === 'error' ? 7000 : 5000);
+    }
+
+    function notify(message, kind) {
+      updateStatus(message, kind);
+      showToast(message, kind);
+    }
+
     function beep(kind) {
       try {
+        if (typeof (window.AudioContext || window.webkitAudioContext) !== 'function') return;
         audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
         const o = audioCtx.createOscillator();
         const g = audioCtx.createGain();
@@ -155,8 +205,9 @@
       $('start').disabled = true;
       updateStatus('Đang xin quyền truy cập camera...', 'pending');
       try {
-        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Trình duyệt không hỗ trợ camera tại địa chỉ này. Hãy mở trang bằng HTTPS và dùng trình duyệt mới.');
+        }
         if (!scanner) {
           scanner = new Html5Qrcode('reader', {
             formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false
@@ -174,7 +225,16 @@
         $('cameraState').textContent = 'Đang quét';
         updateStatus('Sẵn sàng! Đưa mã QR vào khung.', '');
       } catch (err) {
-        updateStatus('Không mở được camera: ' + String(err), 'error');
+        const cameraErrors = {
+          NotAllowedError: 'Bạn chưa cấp quyền camera cho trang web. Hãy cho phép truy cập camera trong cài đặt trình duyệt.',
+          NotFoundError: 'Không tìm thấy camera trên thiết bị này.',
+          NotReadableError: 'Camera đang được ứng dụng khác sử dụng. Hãy đóng ứng dụng đó rồi thử lại.',
+          OverconstrainedError: 'Camera không hỗ trợ cấu hình quét này. Hãy thử dùng trình duyệt khác.'
+        };
+        const message = cameraErrors[err && err.name] ||
+          'Không bật được camera. Hãy kiểm tra quyền camera, đóng ứng dụng đang dùng camera rồi thử lại.' +
+          (err && err.message ? ' Chi tiết: ' + err.message : '');
+        notify(message, 'error');
         $('start').disabled = false;
       }
     }
@@ -196,7 +256,8 @@
       if (value === lastValue && now - lastAt < 5000) return;
       lastValue = value; lastAt = now;
       if (!QR_PATTERN.test(value)) {
-        updateStatus('Đây không phải mã QR nhân viên hợp lệ.', 'error'); beep('error'); return;
+        notify('Mã vừa quét không hợp lệ. Hãy dùng mã QR nhân viên do hệ thống cấp.', 'error');
+        beep('error'); return;
       }
       void submitAttendance(value);
     }
@@ -230,17 +291,18 @@
         if (answer.status === 'success') {
           counter++;
           $('count').textContent = String(counter);
-          updateStatus('✓ ' + answer.name + ' (' + answer.id + ') — ' + answer.time, 'success');
+          notify('Đã ghi nhận ' + answer.name + ' (' + answer.id + ') lúc ' + answer.time + '.', 'success');
           beep('success');
         } else if (answer.status === 'duplicate') {
-          updateStatus('ĐÃ ĐIỂM DANH: ' + answer.name + ' (' + answer.id + ') — ' + answer.time, 'duplicate');
+          notify(answer.name + ' (' + answer.id + ') đã được ghi nhận lúc ' + answer.time + '.', 'duplicate');
           beep('error');
         } else {
-          updateStatus(answer.message || 'Không ghi nhận được điểm danh.', 'error');
+          notify(answer.message || 'Máy chủ không ghi nhận được lượt điểm danh. Hãy kiểm tra PIN và thử lại.', 'error');
           beep('error');
         }
       } catch (err) {
-        updateStatus('Chưa xác minh được kết quả! Kiểm tra mạng và bảng DIEM_DANH trước khi quét lại. ' + String(err.message || err), 'error');
+        notify('Chưa xác minh được kết quả. Hãy kiểm tra mạng và bảng điểm danh trước khi quét lại.' +
+          (err && err.message ? ' Chi tiết: ' + err.message : ''), 'error');
         beep('error');
       } finally {
         busy = false;
