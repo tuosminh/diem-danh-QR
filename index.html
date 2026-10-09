@@ -161,7 +161,8 @@
       };
       const [icon, title] = details[kind] || details.pending;
       $('toastIcon').textContent = icon;
-      $('toastTitle').textContent = title;
+      $('toastTitle').textContent = kind === 'error' && message.indexOf('camera') !== -1
+        ? 'Lỗi camera' : title;
       $('toastMessage').textContent = message;
       toast.className = 'toast ' + (details[kind] ? kind : 'pending') + ' visible';
       clearTimeout(toastTimer);
@@ -224,6 +225,7 @@
         $('cameraState').textContent = 'Đang quét';
         updateStatus('Sẵn sàng! Đưa mã QR vào khung.', '');
       } catch (err) {
+        const detail = err && err.message ? err.message : String(err || 'Lỗi không xác định');
         const cameraErrors = {
           NotAllowedError: 'Bạn chưa cấp quyền camera cho trang web. Hãy cho phép truy cập camera trong cài đặt trình duyệt.',
           NotFoundError: 'Không tìm thấy camera trên thiết bị này.',
@@ -232,7 +234,7 @@
         };
         const message = cameraErrors[err && err.name] ||
           'Không bật được camera. Hãy kiểm tra quyền camera, đóng ứng dụng đang dùng camera rồi thử lại.' +
-          (err && err.message ? ' Chi tiết: ' + err.message : '');
+          ' Chi tiết: ' + detail;
         notify(message, 'error');
         $('start').disabled = false;
       }
@@ -296,7 +298,11 @@
           notify(answer.name + ' (' + answer.id + ') đã được ghi nhận lúc ' + answer.time + '.', 'duplicate');
           beep('error');
         } else {
-          notify(answer.message || 'Máy chủ không ghi nhận được lượt điểm danh. Hãy kiểm tra PIN và thử lại.', 'error');
+          const serverMessage = String(answer.message || '');
+          const message = /""\s+is not a function/i.test(serverMessage)
+            ? 'Google Apps Script báo lỗi xử lý điểm danh. Quản trị viên cần kiểm tra hàm ghi nhận ở phía máy chủ.'
+            : serverMessage || 'Máy chủ không ghi nhận được lượt điểm danh. Hãy kiểm tra PIN và thử lại.';
+          notify(message, 'error');
           beep('error');
         }
       } catch (err) {
