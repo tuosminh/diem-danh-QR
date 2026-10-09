@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#123044">
+  <title>Điểm danh nhân viên bằng QR</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui,-apple-system,"Segoe UI",Arial,sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #16283b; background: #f3f7fa; }
+    .wrap { max-width: 540px; margin: 0 auto; padding: 20px 14px 50px; }
+    .header { text-align: center; margin-bottom: 18px; }
+    .header small { letter-spacing: 2px; color: #42657c; font-weight: 700; }
+    h1 { font-size: clamp(23px,6vw,31px); line-height: 1.18; margin: 7px 0; }
+    p { line-height: 1.5; }
+    .card { background: #fff; border: 1px solid #d8e3eb; border-radius: 16px;
+      box-shadow: 0 6px 22px rgba(16,44,68,.06); padding: 18px; margin-bottom: 14px; }
+    .muted { color: #5c7082; font-size: 14px; }
+    label { display: block; margin: 12px 0 6px; font-weight: 700; }
+    input { width: 100%; border: 1px solid #b6cad8; border-radius: 10px; padding: 13px;
+      font: inherit; font-size: 17px; }
+    button { display: block; width: 100%; border: 0; border-radius: 10px;
+      background: #116d66; color: #fff; padding: 14px; font: inherit; font-weight: 700;
+      font-size: 17px; cursor: pointer; margin-top: 14px; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    button.secondary { background: #dfe8ee; color: #203a4c; }
+    #reader { margin: 12px auto; max-width: 100%; border-radius: 12px; overflow: hidden; }
+    #qrVisual { background: #fff; padding: 16px; display: flex; justify-content: center; }
+    #qrVisual img, #qrVisual canvas { max-width: 100%; height: auto; }
+    #status { padding: 15px; border-radius: 12px; font-size: 17px; font-weight: 700;
+      background: #e8eef3; color: #24485f; min-height: 68px; }
+    #status.success { background: #dcf5e7; color: #08693b; }
+    #status.duplicate { background: #fff1cd; color: #7d5400; }
+    #status.error { background: #fde5e5; color: #9b2222; }
+    #status.pending { background: #e6f0ff; color: #244c91; }
+    .summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .count { font-size: 32px; font-weight: 800; color: #127a58; }
+    .hidden { display: none !important; }
+    .chip { display: inline-block; padding: 7px 10px; border-radius: 100px;
+      background: #e0f0f0; color: #116d66; font-size: 13px; font-weight: 700; }
+    footer { margin-top: 18px; color: #698093; font-size: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header"><small>HỆ THỐNG NỘI BỘ</small><h1>Điểm danh bằng QR</h1>
+      <p class="muted" id="subTitle">Quét mã để tự động ghi nhận vào Google Sheets</p></div>
+
+    <section id="staffView" class="hidden">
+      <div class="card" style="text-align:center">
+        <span class="chip">MÃ QR CÁ NHÂN</span>
+        <h2 id="employeeName">Nhân viên</h2>
+        <div id="qrVisual"></div>
+        <p class="muted">Đưa mã này cho nhân viên kiểm soát quét. Bạn có thể chụp màn hình để lưu.</p>
+        <p class="muted"><strong>Lưu ý:</strong> Không chia sẻ mã QR cho người khác.</p>
+      </div>
+    </section>
+
+    <section id="scannerView" class="hidden">
+      <div class="card" id="controls">
+        <span class="chip">CHẾ ĐỘ NGƯỜI KIỂM SOÁT</span>
+        <label for="pin">Mã PIN của nhân viên kiểm soát</label>
+        <input id="pin" type="password" autocomplete="off" placeholder="Ít nhất 8 ký tự">
+        <label for="station">Điểm quét (tùy chọn)</label>
+        <input id="station" maxlength="50" value="Cổng chính" placeholder="Ví dụ: Cổng chính">
+        <button id="start">Bật camera và bắt đầu quét</button>
+        <button id="stop" class="secondary hidden">Tắt camera</button>
+        <p class="muted">Camera vẫn chạy sau khi ghi nhận. Không cần bấm Gửi giữa các lượt quét.</p>
+      </div>
+      <div class="card">
+        <div class="summary"><strong>Camera quét mã QR</strong><span id="cameraState" class="chip">Chưa bật</span></div>
+        <div id="reader"></div>
+        <div id="status" role="status" aria-live="polite">Nhập PIN và bật camera.</div>
+      </div>
+      <div class="card summary"><div><strong>Ghi nhận thành công</strong><p class="muted" style="margin:4px 0">Trong phiên quét hiện tại</p></div><div class="count" id="count">0</div></div>
+    </section>
+    <footer>Dữ liệu được xác thực và ghi vào Google Sheets qua Apps Script.</footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script>
+    'use strict';
+    // SỬA thành URL triển khai Apps Script kết thúc bằng /exec, giữ nguyên dấu nháy.
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnKIuJ3YJsygSxUh8Sv5iYSTdOJNQ3S2rn5aVYyBTvBr0GfA06tJGjuFzMwYsH9z5qZA/exec';
+    const QR_PATTERN = /^QRNV1:[0-9a-f]{64}$/;
+    const $ = id => document.getElementById(id);
+    const query = new URLSearchParams(location.hash.slice(1));
+    const employeeQr = query.get('qr');
+    let scanner = null;
+    let scanning = false;
+    let busy = false;
+    let counter = 0;
+    let lastValue = '';
+    let lastAt = 0;
+    let audioCtx = null;
+
+    if (employeeQr !== null) showEmployee();
+    else showScanner();
+
+    function showEmployee() {
+      $('staffView').classList.remove('hidden');
+      $('subTitle').textContent = 'Vui lòng trình mã của bạn khi đến điểm danh';
+      $('employeeName').textContent = query.get('name') || 'Nhân viên';
+      if (!QR_PATTERN.test(employeeQr)) {
+        $('qrVisual').textContent = 'Mã QR không hợp lệ. Hãy liên hệ quản trị viên.';
+        return;
+      }
+      if (typeof QRCode === 'undefined') {
+        $('qrVisual').textContent = 'Không tải được thư viện tạo QR. Kiểm tra mạng.';
+        return;
+      }
+      new QRCode($('qrVisual'), {
+        text: employeeQr, width: 260, height: 260,
+        colorDark: '#102c3c', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function showScanner() {
+      $('scannerView').classList.remove('hidden');
+      $('start').addEventListener('click', startCamera);
+      $('stop').addEventListener('click', stopCamera);
+    }
+
+    function updateStatus(message, kind) {
+      $('status').className = kind || '';
+      $('status').textContent = message;
+    }
+
+    function beep(kind) {
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.type = 'sine'; o.frequency.value = kind === 'success' ? 850 : 360;
+        g.gain.value = 0.055;
+        o.start(); o.stop(audioCtx.currentTime + (kind === 'success' ? .14 : .24));
+      } catch (_) { /* Âm báo không bắt buộc */ }
+    }
+
+    async function startCamera() {
+      if (scanning) return;
+      if (SCRIPT_URL.includes('THAY_ID_TRIEN_KHAI') || !SCRIPT_URL.endsWith('/exec')) {
+        updateStatus('Chưa cấu hình SCRIPT_URL trong index.html.', 'error'); return;
+      }
+      if ($('pin').value.trim().length < 8) {
+        updateStatus('Nhập mã PIN kiểm soát có ít nhất 8 ký tự.', 'error'); return;
+      }
+      if (typeof Html5Qrcode === 'undefined') {
+        updateStatus('Chưa tải được thư viện camera; hãy kiểm tra kết nối Internet.', 'error'); return;
+      }
+      $('start').disabled = true;
+      updateStatus('Đang xin quyền truy cập camera...', 'pending');
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        if (!scanner) {
+          scanner = new Html5Qrcode('reader', {
+            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false
+          });
+        }
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 235, height: 235 }, aspectRatio: 1.0 },
+          onDecoded,
+          () => {}
+        );
+        scanning = true;
+        $('start').classList.add('hidden');
+        $('stop').classList.remove('hidden');
+        $('cameraState').textContent = 'Đang quét';
+        updateStatus('Sẵn sàng! Đưa mã QR vào khung.', '');
+      } catch (err) {
+        updateStatus('Không mở được camera: ' + String(err), 'error');
+        $('start').disabled = false;
+      }
+    }
+
+    async function stopCamera() {
+      if (!scanner || !scanning) return;
+      try { await scanner.stop(); } catch (_) {}
+      scanning = false;
+      $('start').classList.remove('hidden');
+      $('start').disabled = false;
+      $('stop').classList.add('hidden');
+      $('cameraState').textContent = 'Đã tắt';
+      updateStatus('Đã tắt camera.', '');
+    }
+
+    function onDecoded(value) {
+      if (busy) return;
+      const now = Date.now();
+      if (value === lastValue && now - lastAt < 5000) return;
+      lastValue = value; lastAt = now;
+      if (!QR_PATTERN.test(value)) {
+        updateStatus('Đây không phải mã QR nhân viên hợp lệ.', 'error'); beep('error'); return;
+      }
+      void submitAttendance(value);
+    }
+
+    function makeRid() {
+      if (crypto.randomUUID) return crypto.randomUUID();
+      const bytes = new Uint8Array(24);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function submitAttendance(qr) {
+      busy = true;
+      const rid = makeRid();
+      updateStatus('Đã đọc QR. Đang ghi điểm danh và chờ xác nhận...', 'pending');
+      try {
+        // POST thật sự ghi dữ liệu. no-cors là để gửi qua tên miền Google;
+        // không dùng phản hồi opaque của POST để tự nhận là thành công.
+        const body = new URLSearchParams({
+          action: 'checkin', rid, qr,
+          pin: $('pin').value.trim(), station: $('station').value.trim()
+        });
+        await fetch(SCRIPT_URL, {
+          method: 'POST', mode: 'no-cors', credentials: 'omit',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body
+        });
+
+        // Sau POST, GET status bằng JSONP. Chỉ server mới trả về kết quả điểm danh.
+        const answer = await waitForResult(rid);
+        if (answer.status === 'success') {
+          counter++;
+          $('count').textContent = String(counter);
+          updateStatus('✓ ' + answer.name + ' (' + answer.id + ') — ' + answer.time, 'success');
+          beep('success');
+        } else if (answer.status === 'duplicate') {
+          updateStatus('ĐÃ ĐIỂM DANH: ' + answer.name + ' (' + answer.id + ') — ' + answer.time, 'duplicate');
+          beep('error');
+        } else {
+          updateStatus(answer.message || 'Không ghi nhận được điểm danh.', 'error');
+          beep('error');
+        }
+      } catch (err) {
+        updateStatus('Chưa xác minh được kết quả! Kiểm tra mạng và bảng DIEM_DANH trước khi quét lại. ' + String(err.message || err), 'error');
+        beep('error');
+      } finally {
+        busy = false;
+      }
+    }
+
+    async function waitForResult(rid) {
+      for (let i = 0; i < 12; i++) {
+        const result = await getStatusJsonp(rid, i);
+        if (result && result.status !== 'pending') return result;
+        await new Promise(resolve => setTimeout(resolve, 700));
+      }
+      throw new Error('Máy chủ phản hồi quá lâu hoặc kết quả tạm thời không có trong cache.');
+    }
+
+    // JSONP chỉ dành cho đọc trạng thái với requestId ngẫu nhiên, KHÔNG dùng để ghi dữ liệu.
+    function getStatusJsonp(rid, attempt) {
+      return new Promise((resolve, reject) => {
+        const fn = 'qrResult_' + rid.replace(/-/g, '') + '_' + attempt;
+        const tag = document.createElement('script');
+        let finished = false;
+        const timeout = setTimeout(() => done(new Error('Truy vấn trạng thái quá hạn.')), 8000);
+        function done(error, value) {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timeout);
+          delete window[fn];
+          tag.remove();
+          if (error) reject(error);
+          else resolve(value);
+        }
+        window[fn] = result => done(null, result);
+        tag.onerror = () => done(new Error('Không đọc được phản hồi từ Google Apps Script.'));
+        const url = new URL(SCRIPT_URL);
+        url.searchParams.set('action', 'status');
+        url.searchParams.set('rid', rid);
+        url.searchParams.set('callback', fn);
+        url.searchParams.set('_', Date.now().toString());
+        tag.src = url.toString();
+        document.head.appendChild(tag);
+      });
+    }
+  </script>
+</body>
+</html>
