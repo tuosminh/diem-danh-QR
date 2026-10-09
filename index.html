@@ -102,6 +102,8 @@
     // Link Apps Script exec của bạn
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0qOyYnmRWZXJre6aKLqt0nOSDm1698cQOA_sQtyLJwr4EHYoU0Tj89lLTiviLDfzt/exec';
     const QR_PATTERN = /^QRNV1:[0-9a-f]{64}$/;
+    const RESULT_DISPLAY_MS = 4000;
+    const READY_STATUS = 'Sẵn sàng cho người tiếp theo...';
     const $ = id => document.getElementById(id);
     const query = new URLSearchParams(location.hash.slice(1));
     const employeeQr = query.get('qr');
@@ -111,6 +113,7 @@
     let isProcessing = false;
     let counter = 0;
     let lastScannedToken = '';
+    let lastResultAt = 0;
     let qrVisible = false;
     let qrLossTimer = null;
     let resultTimer = null;
@@ -225,7 +228,7 @@
         $('start').classList.add('hidden');
         $('stop').classList.remove('hidden');
         $('cameraState').textContent = 'Đang quét';
-        updateStatus('Sẵn sàng cho người tiếp theo...', '');
+        updateStatus(READY_STATUS, '');
       } catch (err) {
         updateStatus('Không mở được camera. Hãy cấp quyền truy cập!', 'error');
         $('start').disabled = false;
@@ -255,14 +258,12 @@
       if (isProcessing) return;
 
       if (decodedText === lastScannedToken) {
-        if ($('status').className !== 'scanning') {
-          updateStatus('Đã xử lý mã này. Hãy đưa QR ra khỏi khung để quét tiếp.', 'scanning');
-        }
         return;
       }
       lastScannedToken = decodedText;
 
       if (!QR_PATTERN.test(decodedText)) {
+        lastResultAt = Date.now();
         updateStatus('Mã QR không hợp lệ. Hãy đưa mã ra khỏi khung rồi thử lại.', 'error');
         beep(false);
         return;
@@ -281,9 +282,23 @@
         qrVisible = false;
         if (!isProcessing) {
           lastScannedToken = '';
-          updateStatus('Sẵn sàng cho người tiếp theo...', '');
+          scheduleReadyAfterResult();
         }
       }, 700);
+    }
+
+    function scheduleReadyAfterResult() {
+      clearTimeout(resultTimer);
+      const remaining = Math.max(0, RESULT_DISPLAY_MS - (Date.now() - lastResultAt));
+      if (!remaining) {
+        updateStatus(READY_STATUS, '');
+        return;
+      }
+      resultTimer = setTimeout(() => {
+        if (scanning && !isProcessing && !qrVisible) {
+          updateStatus(READY_STATUS, '');
+        }
+      }, remaining);
     }
 
     function guiDiemDanhNhanh(qrCode) {
@@ -294,7 +309,9 @@
 
       const timer = setTimeout(() => {
         cleanup();
-        ketThucLuotQuet('Máy chủ chưa phản hồi sau 15 giây. Kiểm tra kết nối trước khi quét lại.', 'error');
+        const message = 'Không nhận được phản hồi từ Apps Script sau 15 giây. Kiểm tra URL /exec, quyền triển khai và kết nối mạng.';
+        showToast(message, 'error');
+        ketThucLuotQuet(message, 'error');
       }, 15000);
 
       function cleanup() {
@@ -307,7 +324,9 @@
         cleanup();
         if (!res || typeof res.status !== 'string') {
           beep(false);
-          ketThucLuotQuet('Phản hồi từ Apps Script không hợp lệ.', 'error');
+          const message = 'Apps Script trả về phản hồi không hợp lệ.';
+          showToast(message, 'error');
+          ketThucLuotQuet(message, 'error');
           return;
         }
         if (res.status === 'success') {
@@ -342,7 +361,9 @@
       script.src = url.toString();
       script.onerror = function() {
         cleanup();
-        ketThucLuotQuet('Lỗi kết nối mạng đến Google Apps Script.', 'error');
+        const message = 'Không tải được phản hồi từ Google Apps Script. Kiểm tra URL /exec và quyền triển khai.';
+        showToast(message, 'error');
+        ketThucLuotQuet(message, 'error');
       };
       document.head.appendChild(script);
     }
@@ -350,23 +371,9 @@
     function ketThucLuotQuet(thongBao, loai) {
       updateStatus(thongBao, loai);
       isProcessing = false;
-      clearTimeout(resultTimer);
-
-      if (qrVisible) {
-        resultTimer = setTimeout(() => {
-          if (scanning && !isProcessing && qrVisible) {
-            updateStatus('Đã xử lý xong. Hãy đưa QR ra khỏi khung để quét lượt tiếp theo.', 'scanning');
-          }
-        }, 900);
-        return;
-      }
-
-      lastScannedToken = '';
-      resultTimer = setTimeout(() => {
-        if (scanning && !isProcessing && !qrVisible) {
-          updateStatus('Sẵn sàng cho người tiếp theo...', '');
-        }
-      }, 1200);
+      lastResultAt = Date.now();
+      if (!qrVisible) lastScannedToken = '';
+      if (!qrVisible) scheduleReadyAfterResult();
     }
   </script>
 </body>
